@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -o errexit
+
+PROVIDER=virtualbox
+NODE_COUNT=1
+
+while [[ $# -gt 1 ]]; do
+	key="$1"
+	case $key in
+    	-p|--provider)
+	    PROVIDER="$2"
+	    shift
+    	;;
+    *)
+    ;;
+	esac
+	shift
+done
+
+if [ ! -z "$1" ]; then
+	NODE_COUNT=$1
+fi
+
+echo "starting Kubernetes cluster with ${NODE_COUNT} worker nodes, using Vagrant provider ${PROVIDER}..."
+
+echo "starting master..."
+vagrant up master --provider ${PROVIDER}
+
+echo "getting cluster config..."
+vagrant ssh -c "sudo cat /etc/kubernetes/admin.conf" > kube.conf
+
+echo "master started, waiting a moment to let things shake down..."
+sleep 120
+
+for i in `seq 1 ${NODE_COUNT}`; do
+	vagrant up worker${i} --provider ${PROVIDER}
+done

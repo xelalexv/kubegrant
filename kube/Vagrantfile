@@ -1,0 +1,45 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+  if ENV['MASTER_IP']
+    master_ip = ENV['MASTER_IP']
+  else
+    master_ip = "192.168.200.10"
+  end
+
+  if ENV['WORKER_IP_BASE']
+    worker_ip_base = ENV['WORKER_IP_BASE']
+  else
+  	parts = master_ip.split(".")
+  	worker_ip_base = ""
+  	for ix in 0 ... parts.size - 1
+  	  worker_ip_base += parts[ix] + "."
+  	end
+    worker_ip_base += "2"
+  end
+
+  config.vm.box = "kubebase"
+  config.ssh.username = "ubuntu"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "2048"
+  end
+
+  config.vm.define "master", primary: true do |master|
+    master.vm.hostname = "master"
+    master.vm.network :private_network, ip: "#{master_ip}"
+    master.vm.provision "file", source: "./def", destination: "def"
+    master.vm.provision :shell, path: "master.sh", :args => "#{master_ip} #{worker_ip_base} 9"
+  end
+
+  (1..9).each do |i|
+    config.vm.define "worker#{i}", autostart: false do |worker|
+      worker.vm.hostname = "worker#{i}"
+      worker.vm.network :private_network, ip: "#{worker_ip_base}#{i}"
+      worker.vm.provision "file", source: "./def", destination: "def"
+      worker.vm.provision :shell, path: "worker.sh", :args => "#{master_ip} worker#{i} #{worker_ip_base}#{i}"
+    end
+  end
+end

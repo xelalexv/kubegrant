@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -o errexit
+
+if [ -z "$1" ]; then
+	read -ep "destroying cluster, proceed? [yN] " proceed
+	if [ "${proceed}" == "y" ]; then
+		vagrant destroy -f
+	fi
+else
+	read -ep "destroying worker node $1, proceed? [yN] " proceed
+	if [ "${proceed}" == "y" ]; then
+		vagrant ssh worker$1 -c "sudo kubeadm reset --remove-node"
+		vagrant destroy -f worker$1
+	fi
+fi

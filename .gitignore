@@ -1,0 +1,6 @@
+*.log
+*.box
+.vagrant
+temp
+*.sublime-*
+

@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -o nounset
+
+echo "removing VM..."
+vagrant destroy --force
+vagrant box remove kubebase --provider virtualbox
+vagrant box remove kubebase --provider libvirt
+virsh vol-delete kubebase_vagrant_box_image_0.img --pool default
+rm -f ./kubebase.box
+
+echo "starting VM..."
+vagrant up
+sleep 60
+
+echo "stopping VM..."
+vagrant halt
+
+echo "packaging..."
+vagrant package --output kubebase.box
+
+echo "adding to boxes"
+vagrant box add kubebase ./kubebase.box --force
+
+echo "mutating into libvirt box..."
+vagrant mutate ./kubebase.box libvirt
+
+echo "cleaning up"
+vagrant destroy --force
+rm -f ./kubebase.box
+
+echo "done"
